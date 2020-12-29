@@ -371,7 +371,7 @@ int main(int argc, char** argv) {
 	    rIsolation++;
 	  }
 	}
-	if (nIsolation == 1) new_reco_iso_pt->Fill(reco_isolation.Pt());
+	if (nIsolation == 1) new_reco_iso_pt->Fill(reco_isolation.Pt(), weight);
 	if (rIsolation > 0) continue;
      
 	// Find the closest truth jet
@@ -561,7 +561,7 @@ int main(int argc, char** argv) {
 	    rIsolation++;
 	  }
 	}
-	if (nIsolation == 1) old_reco_iso_pt->Fill(reco_isolation.Pt());
+	if (nIsolation == 1) old_reco_iso_pt->Fill(reco_isolation.Pt(), weight);
 	if (rIsolation > 0) continue;
      
 	// Find the closest truth jet
