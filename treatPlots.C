@@ -33,13 +33,13 @@ int main(int argc, char** argv) {
   TGraphErrors* _new_jet_resolution_pu = (TGraphErrors*) input->Get("new_jet_resolution_pu");
 
   TGraphErrors* old_jet_scale = new TGraphErrors();
-  TGraphErrors* old_jet_resolution = new TGraph();
+  TGraphErrors* old_jet_resolution = new TGraphErrors();
   TGraphErrors* old_jet_scale_pu = new TGraphErrors();
-  TGraphErrors* old_jet_resolution_pu = new TGraph();
+  TGraphErrors* old_jet_resolution_pu = new TGraphErrors();
   TGraphErrors* new_jet_scale = new TGraphErrors();
-  TGraphErrors* new_jet_resolution = new TGraph();
+  TGraphErrors* new_jet_resolution = new TGraphErrors();
   TGraphErrors* new_jet_scale_pu = new TGraphErrors();
-  TGraphErrors* new_jet_resolution_pu = new TGraph();
+  TGraphErrors* new_jet_resolution_pu = new TGraphErrors();
 
   int npt = 0;
   for (int i=0; i<_old_jet_scale->GetN(); i++) {    
