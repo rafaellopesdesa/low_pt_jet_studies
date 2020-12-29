@@ -31,6 +31,7 @@
 #include <utility>
 
 #define debug false
+#define debug2 false
 
 double calculateResolution(double sigma, double alpha1, double alpha2, double n1, double n2, double cl) {
 
@@ -113,6 +114,9 @@ int main(int argc, char** argv) {
 
   TH1D* new_reco_pt = new TH1D("new_reco_pt", "new_reco_pt", 40, 15., 25.);
   TH1D* old_reco_pt = new TH1D("old_reco_pt", "old_reco_pt", 40, 15., 25.);
+
+  TH1D* new_reco_iso_pt = new TH1D("new_reco_iso_pt", "new_reco_iso_pt", 50, 0., 50.);
+  TH1D* old_reco_iso_pt = new TH1D("old_reco_iso_pt", "old_reco_iso_pt", 50, 0., 50.);
 
   TH1D* new_truth_pt = new TH1D("new_truth_pt", "new_truth_pt", 80, 10., 30.);
   TH1D* old_truth_pt = new TH1D("old_truth_pt", "old_truth_pt", 80, 10., 30.);
@@ -219,13 +223,17 @@ int main(int argc, char** argv) {
   std::vector<float>* p_truth_tau_e = &truth_tau_e;
 
   for (int ifile = 1; ifile<=450; ifile++) {
-    std::cout << "Reading file " << ifile << std::endl;
+
+    if (debug) {
+      if (ifile == 2) break;
+    }
+
+    if (!debug2) std::cout << "Reading file " << ifile << std::endl;
     TFile* newFile = TFile::Open(TString::Format("/eos/user/r/rcoelhol/jet_studies/AnalysisTop/output_new_%d.root", ifile));  
     TTree* newReco = (TTree*) newFile->Get("nominal");
     TTree* newTruth = (TTree*) newFile->Get("particleLevel");
     newTruth->BuildIndex("eventNumber");
       
-
     newTruth->SetBranchAddress("jet_pt", &p_truth_jet_pt);
     newTruth->SetBranchAddress("jet_eta", &p_truth_jet_eta);
     newTruth->SetBranchAddress("jet_phi", &p_truth_jet_phi);
@@ -264,9 +272,10 @@ int main(int argc, char** argv) {
     // The study will be made with 25 > pT(reco) > 15 GeV
     // and |eta(reco)| < 2.5
 
-
     for (size_t ievent=0; ievent < newReco->GetEntries(); ievent++) {
-      if (ievent % 1000 == 0) std::cout << "New correction, event " << ievent << "/" << newReco->GetEntries() << std::endl;
+      if (!debug2) {
+	if (ievent % 1000 == 0) std::cout << "New correction, event " << ievent << "/" << newReco->GetEntries() << std::endl;
+      }
       int recoEvent = newReco->GetEntry(ievent);
       int truthEvent = newTruth->GetEntryWithIndex((Int_t) eventNumber);
       if (debug) {
@@ -275,6 +284,11 @@ int main(int argc, char** argv) {
       }
       if (truthEvent < 0 || recoEvent < 0) continue;
     
+      if (debug) {
+	std::cout << "Got new correction, event number " << eventNumber << std::endl;
+	if (ievent == 20) break;
+      }
+
       double weight = weight_mc * weight_pileup;
 
       std::vector<float> all_jet_pt(reco_jet_pt);
@@ -306,17 +320,6 @@ int main(int argc, char** argv) {
 
 	// Check if jet is isolated https://arxiv.org/pdf/1703.09665.pdf
 	int nIsolation = 0;
-	for (size_t irecoJet2 = 0; irecoJet2 < all_jet_pt.size(); irecoJet2++) {
-	  if (irecoJet == irecoJet2) continue;
-	  if (all_jet_pt[irecoJet2] < 7.0*GeV) continue;
-	  TLorentzVector reco_jet2(0,0,0,0);
-	  reco_jet2.SetPtEtaPhiE(all_jet_pt[irecoJet2]/GeV, all_jet_eta[irecoJet2], all_jet_phi[irecoJet2], all_jet_e[irecoJet2]/GeV);
-	  if (reco_jet2.DeltaR(reco_jet) < 0.6) {
-	    nIsolation++;
-	    break;
-	  }
-	}
-	if (nIsolation > 0) continue;
 	for (size_t itruthMu2 = 0; itruthMu2 < truth_mu_pt.size(); itruthMu2++) {
 	  if (truth_mu_pt[itruthMu2] < 7.0*GeV) continue;
 	  TLorentzVector truth_mu2(0,0,0,0);
@@ -356,6 +359,20 @@ int main(int argc, char** argv) {
 	  }
 	}
 	if (nIsolation > 1) continue;
+	int rIsolation = 0;
+	TLorentzVector reco_isolation(0,0,0,0);
+	for (size_t irecoJet2 = 0; irecoJet2 < all_jet_pt.size(); irecoJet2++) {
+	  if (irecoJet == irecoJet2) continue;
+	  if (all_jet_pt[irecoJet2] < 7.0*GeV) continue;
+	  TLorentzVector reco_jet2(0,0,0,0);
+	  reco_jet2.SetPtEtaPhiE(all_jet_pt[irecoJet2]/GeV, all_jet_eta[irecoJet2], all_jet_phi[irecoJet2], all_jet_e[irecoJet2]/GeV);
+	  if (reco_jet2.DeltaR(reco_jet) < 0.6) {
+	    reco_isolation += reco_jet2;
+	    rIsolation++;
+	  }
+	}
+	if (nIsolation == 1) new_reco_iso_pt->Fill(reco_isolation.Pt());
+	if (rIsolation > 0) continue;
      
 	// Find the closest truth jet
 	double minDist = 99999;
@@ -454,11 +471,18 @@ int main(int argc, char** argv) {
     oldReco->SetBranchAddress("mu_actual", &mu_actual);
 
     for (size_t ievent=0; ievent < oldReco->GetEntries(); ievent++) {
-      if (ievent % 1000 == 0) std::cout << "Old correction, event " << ievent << "/" << oldReco->GetEntries() << std::endl;
+      if (!debug2) {
+	if (ievent % 1000 == 0) std::cout << "Old correction, event " << ievent << "/" << oldReco->GetEntries() << std::endl;
+      }
       int recoEvent = oldReco->GetEntry(ievent);
       int truthEvent = oldTruth->GetEntryWithIndex((Int_t) eventNumber);
       if (truthEvent < 0 || recoEvent < 0) continue;
     
+      if (debug) {
+	std::cout << "Got old correction, event number " << eventNumber << std::endl;
+	if (ievent == 20) break;
+      }
+
       double weight = weight_mc * weight_pileup;
 
       std::vector<float> all_jet_pt(reco_jet_pt);
@@ -486,17 +510,6 @@ int main(int argc, char** argv) {
 
 	// Check if jet is isolated https://arxiv.org/pdf/1703.09665.pdf
 	int nIsolation = 0;
-	for (size_t irecoJet2 = 0; irecoJet2 < all_jet_pt.size(); irecoJet2++) {
-	  if (irecoJet == irecoJet2) continue;
-	  if (all_jet_pt[irecoJet2] < 7.0*GeV) continue;
-	  TLorentzVector reco_jet2(0,0,0,0);
-	  reco_jet2.SetPtEtaPhiE(all_jet_pt[irecoJet2]/GeV, all_jet_eta[irecoJet2], all_jet_phi[irecoJet2], all_jet_e[irecoJet2]/GeV);
-	  if (reco_jet2.DeltaR(reco_jet) < 0.6) {
-	    nIsolation++;
-	    break;
-	  }
-	}
-	if (nIsolation > 0) continue;
 	for (size_t itruthMu2 = 0; itruthMu2 < truth_mu_pt.size(); itruthMu2++) {
 	  if (truth_mu_pt[itruthMu2] < 7.0*GeV) continue;
 	  TLorentzVector truth_mu2(0,0,0,0);
@@ -536,7 +549,21 @@ int main(int argc, char** argv) {
 	  }
 	}
 	if (nIsolation > 1) continue;
-
+	int rIsolation = 0;
+	TLorentzVector reco_isolation(0,0,0,0);
+	for (size_t irecoJet2 = 0; irecoJet2 < all_jet_pt.size(); irecoJet2++) {
+	  if (irecoJet == irecoJet2) continue;
+	  if (all_jet_pt[irecoJet2] < 7.0*GeV) continue;
+	  TLorentzVector reco_jet2(0,0,0,0);
+	  reco_jet2.SetPtEtaPhiE(all_jet_pt[irecoJet2]/GeV, all_jet_eta[irecoJet2], all_jet_phi[irecoJet2], all_jet_e[irecoJet2]/GeV);
+	  if (reco_jet2.DeltaR(reco_jet) < 0.6) {
+	    reco_isolation += reco_jet2;
+	    rIsolation++;
+	  }
+	}
+	if (nIsolation == 1) old_reco_iso_pt->Fill(reco_isolation.Pt());
+	if (rIsolation > 0) continue;
+     
 	// Find the closest truth jet
 	double minDist = 99999;
 	double minJet = -1;
@@ -591,6 +618,9 @@ int main(int argc, char** argv) {
       }
     }
     oldFile->Close();
+    if (debug2) {
+      std::cout << "After file " << ifile << ", new correction: " << new_reco_pt->Integral() << "(" << new_reco_pt->GetEntries() << ")" << ", old correction: " << old_reco_pt->Integral() << "(" << old_reco_pt->GetEntries() << ")" << std::endl;
+    }
   }
 
   RooRealVar _mean("_mean", "_mean", -5., 5.);
@@ -845,6 +875,16 @@ int main(int argc, char** argv) {
   leg->Draw();
   c1->Print("reco_pt.png");
   c1->Print("reco_pt.pdf");
+
+  new_reco_iso_pt->SetLineColor(kBlue);
+  old_reco_iso_pt->SetLineColor(kRed);
+  new_reco_iso_pt->SetTitle("Jet p_{T}; p_{T}^{iso} [GeV]; Entries");
+  new_reco_iso_pt->Draw("hist");
+  old_reco_iso_pt->Draw("hist,same");
+  ATLASLabel(0.2, 0.8, "Work in Progress");
+  leg->Draw();
+  c1->Print("reco_iso_pt.png");
+  c1->Print("reco_iso_pt.pdf");
 
   new_truth_pt->SetLineColor(kBlue);
   old_truth_pt->SetLineColor(kRed);
