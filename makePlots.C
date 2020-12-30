@@ -480,11 +480,11 @@ int main(int argc, char** argv) {
 	  if (reco_jet.Pt() < 20) {
 	    new_reco_response_low->Fill((reco_jet.Pt()-truth_jet.Pt())/truth_jet.Pt(), weight);
 	    new_reco_eta_resolution_low->Fill((reco_jet.Eta()-truth_jet.Eta()), weight);
-	    new_reco_phi_resolution_low->Fill((reco_jet.Phi()-truth_jet.Phi()), weight);
+	    new_reco_phi_resolution_low->Fill(TVector2::Phi_mpi_pi(reco_jet.Phi()-truth_jet.Phi()), weight);
 	  } else {
 	    new_reco_response_high->Fill((reco_jet.Pt()-truth_jet.Pt())/truth_jet.Pt(), weight);
 	    new_reco_eta_resolution_high->Fill((reco_jet.Eta()-truth_jet.Eta()), weight);
-	    new_reco_phi_resolution_high->Fill((reco_jet.Eta()-truth_jet.Phi()), weight);
+	    new_reco_phi_resolution_high->Fill(TVector2::Phi_mpi_pi(reco_jet.Phi()-truth_jet.Phi()), weight);
 	  }
 	  new_hs_jvt_efficiency->FillWeighted(all_jet_jvt[irecoJet] > 0.50, weight, reco_jet.Pt());
 	  if (irecoJet < reco_jet_pt.size()) {
@@ -691,11 +691,11 @@ int main(int argc, char** argv) {
 	  if (reco_jet.Pt() < 20) {
 	    old_reco_response_low->Fill((reco_jet.Pt()-truth_jet.Pt())/truth_jet.Pt(), weight);
 	    old_reco_eta_resolution_low->Fill((reco_jet.Eta()-truth_jet.Eta()), weight);
-	    old_reco_phi_resolution_low->Fill((reco_jet.Phi()-truth_jet.Phi()), weight);
+	    old_reco_phi_resolution_low->Fill(TVector2::Phi_mpi_pi(reco_jet.Phi()-truth_jet.Phi()), weight);
 	  } else {
 	    old_reco_response_high->Fill((reco_jet.Pt()-truth_jet.Pt())/truth_jet.Pt(), weight);
 	    old_reco_eta_resolution_high->Fill((reco_jet.Eta()-truth_jet.Eta()), weight);
-	    old_reco_phi_resolution_high->Fill((reco_jet.Phi()-truth_jet.Phi()), weight);
+	    old_reco_phi_resolution_high->Fill(TVector2::Phi_mpi_pi(reco_jet.Phi()-truth_jet.Phi()), weight);
 	  }
 	  old_hs_jvt_efficiency->FillWeighted(all_jet_jvt[irecoJet] > 0.50, weight, reco_jet.Pt());
 	  if (irecoJet < reco_jet_pt.size()) {
