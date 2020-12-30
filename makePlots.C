@@ -183,6 +183,18 @@ int main(int argc, char** argv) {
   TH1D* new_reco_response_high = new TH1D("new_reco_response_high", "", 40, -2., 2.);
   TH1D* old_reco_response_high = new TH1D("old_reco_response_high", "", 40, -2., 2.);
 
+  TH1D* new_reco_eta_resolution_low = new TH1D("new_reco_eta_resolution_low", "", 40, -0.3, 0.3);
+  TH1D* old_reco_eta_resolution_low = new TH1D("old_reco_eta_resolution_low", "", 40, -0.3, 0.3);
+
+  TH1D* new_reco_eta_resolution_high = new TH1D("new_reco_eta_resolution_high", "", 40, -0.3, 0.3);
+  TH1D* old_reco_eta_resolution_high = new TH1D("old_reco_eta_resolution_high", "", 40, -0.3, 0.3);
+
+  TH1D* new_reco_phi_resolution_low = new TH1D("new_reco_phi_resolution_low", "", 40, -0.3, 0.3);
+  TH1D* old_reco_phi_resolution_low = new TH1D("old_reco_phi_resolution_low", "", 40, -0.3, 0.3);
+
+  TH1D* new_reco_phi_resolution_high = new TH1D("new_reco_phi_resolution_high", "", 40, -0.3, 0.3);
+  TH1D* old_reco_phi_resolution_high = new TH1D("old_reco_phi_resolution_high", "", 40, -0.3, 0.3);
+
   TEfficiency* new_hs_jvt_efficiency = new TEfficiency("new_hs_jvt_efficiency", "", ntot, 15., 25.);
   TEfficiency* old_hs_jvt_efficiency = new TEfficiency("old_hs_jvt_efficiency", "", ntot, 15., 25.);
 
@@ -465,8 +477,15 @@ int main(int argc, char** argv) {
 	  new_truth_pt->Fill(truth_jet.Pt(), weight);
 	  new_truth_eta->Fill(truth_jet.Eta(), weight);
 
-	  if (reco_jet.Pt() < 20) new_reco_response_low->Fill((reco_jet.Pt()-truth_jet.Pt())/truth_jet.Pt(), weight);
-	  else new_reco_response_high->Fill((reco_jet.Pt()-truth_jet.Pt())/truth_jet.Pt(), weight);
+	  if (reco_jet.Pt() < 20) {
+	    new_reco_response_low->Fill((reco_jet.Pt()-truth_jet.Pt())/truth_jet.Pt(), weight);
+	    new_reco_eta_resolution_low->Fill((reco_jet.Eta()-truth_jet.Eta()), weight);
+	    new_reco_phi_resolution_low->Fill((reco_jet.Phi()-truth_jet.Phi()), weight);
+	  } else {
+	    new_reco_response_high->Fill((reco_jet.Pt()-truth_jet.Pt())/truth_jet.Pt(), weight);
+	    new_reco_eta_resolution_high->Fill((reco_jet.Eta()-truth_jet.Phi()), weight);
+	    new_reco_phi_resolution_high->Fill((reco_jet.Eta()-truth_jet.Phi()), weight);
+	  }
 	  new_hs_jvt_efficiency->FillWeighted(all_jet_jvt[irecoJet] > 0.50, weight, reco_jet.Pt());
 	  if (irecoJet < reco_jet_pt.size()) {
 	    if (truth_jet_b[minJet] > 0) new_btag_b_efficiency->FillWeighted(reco_jet_b[irecoJet], weight, reco_jet.Pt());
@@ -669,8 +688,15 @@ int main(int argc, char** argv) {
 	  old_truth_pt->Fill(truth_jet.Pt(), weight);
 	  old_truth_eta->Fill(truth_jet.Eta(), weight);
 
-	  if (reco_jet.Pt() < 20) old_reco_response_low->Fill((reco_jet.Pt()-truth_jet.Pt())/truth_jet.Pt(), weight);
-	  else old_reco_response_high->Fill((reco_jet.Pt()-truth_jet.Pt())/truth_jet.Pt(), weight);
+	  if (reco_jet.Pt() < 20) {
+	    old_reco_response_low->Fill((reco_jet.Pt()-truth_jet.Pt())/truth_jet.Pt(), weight);
+	    old_reco_eta_resolution_low->Fill((reco_jet.Eta()-truth_jet.Eta()), weight);
+	    old_reco_phi_resolution_low->Fill((reco_jet.Phi()-truth_jet.Phi()), weight);
+	  } else {
+	    old_reco_response_high->Fill((reco_jet.Pt()-truth_jet.Pt())/truth_jet.Pt(), weight);
+	    old_reco_eta_resolution_high->Fill((reco_jet.Eta()-truth_jet.Eta()), weight);
+	    old_reco_phi_resolution_high->Fill((reco_jet.Phi()-truth_jet.Phi()), weight);
+	  }
 	  old_hs_jvt_efficiency->FillWeighted(all_jet_jvt[irecoJet] > 0.50, weight, reco_jet.Pt());
 	  if (irecoJet < reco_jet_pt.size()) {
 	    if (truth_jet_b[minJet] > 0) old_btag_b_efficiency->FillWeighted(reco_jet_b[irecoJet], weight, reco_jet.Pt());
@@ -724,6 +750,12 @@ int main(int argc, char** argv) {
 
   PutOverflowInLastBin(new_reco_response_high); PutUnderflowInFirstBin(new_reco_response_high);
   PutOverflowInLastBin(old_reco_response_high); PutUnderflowInFirstBin(old_reco_response_high);
+
+  PutOverflowInLastBin(new_reco_eta_resolution_low); PutUnderflowInFirstBin(new_reco_eta_resolution_low);
+  PutOverflowInLastBin(old_reco_eta_resolution_low); PutUnderflowInFirstBin(old_reco_eta_resolution_low);
+
+  PutOverflowInLastBin(new_reco_phi_resolution_high); PutUnderflowInFirstBin(new_reco_phi_resolution_high);
+  PutOverflowInLastBin(old_reco_phi_resolution_high); PutUnderflowInFirstBin(old_reco_phi_resolution_high);
 
   RooRealVar _mean("_mean", "_mean", -5., 5.);
   RooRealVar _sigma("_sigma", "_sigma", 0., 10.);
@@ -967,6 +999,58 @@ int main(int argc, char** argv) {
   leg->Draw();
   c1->Print("reco_response_high.png");
   c1->Print("reco_response_high.pdf");
+
+  new_reco_eta_resolution_low->SetLineColor(kBlue);
+  old_reco_eta_resolution_low->SetLineColor(kRed);
+  new_reco_eta_resolution_low->SetTitle("Jet eta resolution 15 < p_{T} < 20 GeV; #eta^{reco} - #eta^{truth}; Entries");
+  new_reco_eta_resolution_low->SetNormFactor(1);
+  old_reco_eta_resolution_low->SetNormFactor(1);
+  new_reco_eta_resolution_low->Draw("hist");
+  old_reco_eta_resolution_low->Draw("hist,same");
+  ATLASLabel(0.2, 0.8, "Work in Progress");
+  myText(0.2, 0.72, kBlack, "15 < p_{T}^{jet} < 20 GeV");
+  leg->Draw();
+  c1->Print("reco_eta_resolution_low.png");
+  c1->Print("reco_eta_resolution_low.pdf");
+
+  new_reco_eta_resolution_high->SetLineColor(kBlue);
+  old_reco_eta_resolution_high->SetLineColor(kRed);
+  new_reco_eta_resolution_high->SetTitle("Jet eta resolution 20 < p_{T} < 25 GeV; #eta^{reco} - #eta^{truth}; Entries");
+  new_reco_eta_resolution_high->SetNormFactor(1);
+  old_reco_eta_resolution_high->SetNormFactor(1);
+  new_reco_eta_resolution_high->Draw("hist");
+  old_reco_eta_resolution_high->Draw("hist,same");
+  ATLASLabel(0.2, 0.8, "Work in Progress");
+  myText(0.2, 0.72, kBlack, "20 < p_{T}^{jet} < 25 GeV");
+  leg->Draw();
+  c1->Print("reco_eta_resolution_high.png");
+  c1->Print("reco_eta_resolution_high.pdf");
+
+  new_reco_phi_resolution_low->SetLineColor(kBlue);
+  old_reco_phi_resolution_low->SetLineColor(kRed);
+  new_reco_phi_resolution_low->SetTitle("Jet phi resolution 15 < p_{T} < 20 GeV; #phi^{reco} - #phi^{truth}; Entries");
+  new_reco_phi_resolution_low->SetNormFactor(1);
+  old_reco_phi_resolution_low->SetNormFactor(1);
+  new_reco_phi_resolution_low->Draw("hist");
+  old_reco_phi_resolution_low->Draw("hist,same");
+  ATLASLabel(0.2, 0.8, "Work in Progress");
+  myText(0.2, 0.72, kBlack, "15 < p_{T}^{jet} < 20 GeV");
+  leg->Draw();
+  c1->Print("reco_phi_resolution_low.png");
+  c1->Print("reco_phi_resolution_low.pdf");
+
+  new_reco_phi_resolution_high->SetLineColor(kBlue);
+  old_reco_phi_resolution_high->SetLineColor(kRed);
+  new_reco_phi_resolution_high->SetTitle("Jet phi resolution 20 < p_{T} < 25 GeV; #phi^{reco} - #phi^{truth}; Entries");
+  new_reco_phi_resolution_high->SetNormFactor(1);
+  old_reco_phi_resolution_high->SetNormFactor(1);
+  new_reco_phi_resolution_high->Draw("hist");
+  old_reco_phi_resolution_high->Draw("hist,same");
+  ATLASLabel(0.2, 0.8, "Work in Progress");
+  myText(0.2, 0.72, kBlack, "20 < p_{T}^{jet} < 25 GeV");
+  leg->Draw();
+  c1->Print("reco_phi_resolution_high.png");
+  c1->Print("reco_phi_resolution_high.pdf");
 
   new_reco_pt->SetMinimum(0);
   old_reco_pt->SetMinimum(0);
