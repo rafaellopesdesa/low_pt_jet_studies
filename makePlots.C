@@ -13,6 +13,7 @@
 #include "TGraphErrors.h"
 #include "TGraphAsymmErrors.h"
 #include "TMultiGraph.h"
+#include "TVector2.h"
 
 #include "RooRealVar.h"
 #include "RooDataSet.h"
