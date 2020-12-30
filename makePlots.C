@@ -483,7 +483,7 @@ int main(int argc, char** argv) {
 	    new_reco_phi_resolution_low->Fill((reco_jet.Phi()-truth_jet.Phi()), weight);
 	  } else {
 	    new_reco_response_high->Fill((reco_jet.Pt()-truth_jet.Pt())/truth_jet.Pt(), weight);
-	    new_reco_eta_resolution_high->Fill((reco_jet.Eta()-truth_jet.Phi()), weight);
+	    new_reco_eta_resolution_high->Fill((reco_jet.Eta()-truth_jet.Eta()), weight);
 	    new_reco_phi_resolution_high->Fill((reco_jet.Eta()-truth_jet.Phi()), weight);
 	  }
 	  new_hs_jvt_efficiency->FillWeighted(all_jet_jvt[irecoJet] > 0.50, weight, reco_jet.Pt());
