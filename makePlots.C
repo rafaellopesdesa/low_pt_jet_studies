@@ -33,6 +33,30 @@
 #define debug false
 #define debug2 false
 
+void PutOverflowInLastBin(TH1D* h) {
+
+  int nb = h->GetNbinsX();
+
+  double bc_new = h->Integral(nb,nb+1);
+  double be_new = TMath::Sqrt(h->GetBinError(nb)*h->GetBinError(nb) + h->GetBinError(nb+1)*h->GetBinError(nb+1));
+  h->SetBinContent(nb,bc_new);
+  h->SetBinError(nb,be_new);
+  h->SetBinContent(nb+1,0);
+  h->SetBinError(nb+1,0);
+}
+
+void PutUnderflowInFirstBin(TH1D* h) {
+
+  int nb = 0;
+
+  double bc_new = h->Integral(nb,nb+1);
+  double be_new = TMath::Sqrt(h->GetBinError(nb)*h->GetBinError(nb) + h->GetBinError(nb+1)*h->GetBinError(nb+1));
+  h->SetBinContent(nb+1,bc_new);
+  h->SetBinError(nb+1,be_new);
+  h->SetBinContent(nb,0);
+  h->SetBinError(nb,0);
+}
+
 double calculateResolution(double sigma, double alpha1, double alpha2, double n1, double n2, double cl) {
 
   double leftval=0., rightval=0.;
@@ -66,7 +90,7 @@ double doFit(RooDataSet& dataset, RooRealVar& response, RooRealVar& pt_reco, Roo
   
   RooDataSet* reduced_dataset = (RooDataSet*) dataset.reduce(RooArgSet(response,pt_reco,option), cut.Data());
   std::cout << "Fitting " << reduced_dataset->numEntries() << " entries" << std::endl;
-  mean.setVal(reduced_dataset->mean(response));
+  mean.setVal(reduced_dataset->mean(response)-0.1);
   sigma.setVal(reduced_dataset->sigma(response));
   alpha1.setVal(1);
   alpha2.setVal(2);
@@ -78,10 +102,11 @@ double doFit(RooDataSet& dataset, RooRealVar& response, RooRealVar& pt_reco, Roo
   alpha2.setConstant(false);
   n1.setConstant(true);
   n2.setConstant(true);
-  gaus.fitTo(*reduced_dataset,RooFit::Range(xmin, xmax), RooFit::NumCPU(4));
+  gaus.fitTo(*reduced_dataset,RooFit::Range(0.2*xmin, 0.2*xmax), RooFit::NumCPU(4));
   cbfunc.fitTo(*reduced_dataset,RooFit::Range(xmin, xmax), RooFit::NumCPU(4));
   n1.setConstant(false);
   n2.setConstant(false);
+  cbfunc.fitTo(*reduced_dataset,RooFit::Range(xmin, xmax), RooFit::NumCPU(4), RooFit::Save());
   RooFitResult *result = cbfunc.fitTo(*reduced_dataset,RooFit::Range(xmin, xmax), RooFit::NumCPU(4), RooFit::Save());
   if (result->status() > 2 && false) {
     n1.setVal(20);
@@ -111,18 +136,36 @@ int main(int argc, char** argv) {
 
   double GeV = 1000.;
   int ntot = 10;
+  
+  TH1D* new_all_cutflow = new TH1D("new_all_cutflow", "new_all_cutflow", 450, 0, 450);
+  TH1D* new_selected_cutflow = new TH1D("new_selected_cutflow", "new_selected_cutflow", 450, 0, 450);
+  TH1D* new_thiso_cutflow = new TH1D("new_thiso_cutflow", "new_thiso_cutflow", 450, 0, 450);
+  TH1D* new_expiso_cutflow = new TH1D("new_expiso_cutflow", "new_expiso_cutflow", 450, 0, 450);
+  TH1D* new_matched_cutflow = new TH1D("new_matched_cutflow", "new_matched_cutflow", 450, 0, 450);
+
+  TH1D* old_all_cutflow = new TH1D("old_all_cutflow", "old_all_cutflow", 450, 0, 450);
+  TH1D* old_selected_cutflow = new TH1D("old_selected_cutflow", "old_selected_cutflow", 450, 0, 450);
+  TH1D* old_thiso_cutflow = new TH1D("old_thiso_cutflow", "old_thiso_cutflow", 450, 0, 450);
+  TH1D* old_expiso_cutflow = new TH1D("old_expiso_cutflow", "old_expiso_cutflow", 450, 0, 450);
+  TH1D* old_matched_cutflow = new TH1D("old_matched_cutflow", "old_matched_cutflow", 450, 0, 450);
 
   TH1D* new_reco_pt = new TH1D("new_reco_pt", "new_reco_pt", 40, 15., 25.);
   TH1D* old_reco_pt = new TH1D("old_reco_pt", "old_reco_pt", 40, 15., 25.);
 
-  TH1D* new_reco_iso_pt = new TH1D("new_reco_iso_pt", "new_reco_iso_pt", 50, 0., 50.);
-  TH1D* old_reco_iso_pt = new TH1D("old_reco_iso_pt", "old_reco_iso_pt", 50, 0., 50.);
+  TH1D* new_reco_all_pt = new TH1D("new_reco_all_pt", "new_reco_all_pt", 120, 5., 35.);
+  TH1D* old_reco_all_pt = new TH1D("old_reco_all_pt", "old_reco_all_pt", 120, 5., 35.);
 
-  TH1D* new_truth_pt = new TH1D("new_truth_pt", "new_truth_pt", 80, 10., 30.);
-  TH1D* old_truth_pt = new TH1D("old_truth_pt", "old_truth_pt", 80, 10., 30.);
+  TH1D* new_reco_iso_pt = new TH1D("new_reco_iso_pt", "new_reco_iso_pt", 25, 0., 50.);
+  TH1D* old_reco_iso_pt = new TH1D("old_reco_iso_pt", "old_reco_iso_pt", 25, 0., 50.);
+
+  TH1D* new_truth_pt = new TH1D("new_truth_pt", "new_truth_pt", 120, 5., 35.);
+  TH1D* old_truth_pt = new TH1D("old_truth_pt", "old_truth_pt", 120, 5., 35.);
 
   TH1D* new_reco_eta = new TH1D("new_reco_eta", "new_reco_eta", 40, -2.5, 2.5);
   TH1D* old_reco_eta = new TH1D("old_reco_eta", "old_reco_eta", 40, -2.5, 2.5);
+
+  TH1D* new_reco_all_eta = new TH1D("new_reco_all_eta", "new_reco_all_eta", 48, -3.0, 3.0);
+  TH1D* old_reco_all_eta = new TH1D("old_reco_all_eta", "old_reco_all_eta", 48, -3.0, 3.0);
 
   TH1D* new_truth_eta = new TH1D("new_truth_eta", "new_truth_eta", 48, -3.0, 3.0);
   TH1D* old_truth_eta = new TH1D("old_truth_eta", "old_truth_eta", 48, -3.0, 3.0);
@@ -309,14 +352,19 @@ int main(int argc, char** argv) {
 
       // First, find the closest truth jet
       for (size_t irecoJet = 0; irecoJet < all_jet_pt.size(); irecoJet++) {
-      
-      
+
+	new_all_cutflow->Fill(ifile-0.5,weight);
+	new_reco_all_pt->Fill(all_jet_pt[irecoJet]/GeV, weight);
+	new_reco_all_pt->Fill(all_jet_eta[irecoJet], weight);
+            
 	// Defines the relevant phase-space for this study
 	if (all_jet_pt[irecoJet] < 15*GeV) continue;
 	if (all_jet_pt[irecoJet] > 25*GeV) continue;
 	if (std::abs(all_jet_eta[irecoJet]) > 2.5) continue;
 	TLorentzVector reco_jet(0,0,0,0);
 	reco_jet.SetPtEtaPhiE(all_jet_pt[irecoJet]/GeV, all_jet_eta[irecoJet], all_jet_phi[irecoJet], all_jet_e[irecoJet]/GeV);
+
+	new_selected_cutflow->Fill(ifile-0.5,weight);
 
 	// Check if jet is isolated https://arxiv.org/pdf/1703.09665.pdf
 	int nIsolation = 0;
@@ -359,6 +407,9 @@ int main(int argc, char** argv) {
 	  }
 	}
 	if (nIsolation > 1) continue;
+	
+	new_thiso_cutflow->Fill(ifile-0.5,weight);
+
 	int rIsolation = 0;
 	TLorentzVector reco_isolation(0,0,0,0);
 	for (size_t irecoJet2 = 0; irecoJet2 < all_jet_pt.size(); irecoJet2++) {
@@ -374,6 +425,8 @@ int main(int argc, char** argv) {
 	if (nIsolation == 1) new_reco_iso_pt->Fill(reco_isolation.Pt(), weight);
 	if (rIsolation > 0) continue;
      
+	new_expiso_cutflow->Fill(ifile-0.5,weight);
+
 	// Find the closest truth jet
 	double minDist = 99999;
 	double minJet = -1;
@@ -401,6 +454,8 @@ int main(int argc, char** argv) {
 	else new_reco_truth_dist_high->Fill(minDist, weight);
 
 	if (minDist < 0.3) { // HS jet
+	  new_matched_cutflow->Fill(ifile-0.5,weight);
+
 	  new_reco_pt->Fill(reco_jet.Pt(), weight);
 	  new_reco_eta->Fill(reco_jet.Eta(), weight);
 	  new_truth_pt->Fill(truth_jet.Pt(), weight);
@@ -500,13 +555,18 @@ int main(int argc, char** argv) {
       // First, find the closest truth jet
       for (size_t irecoJet = 0; irecoJet < all_jet_pt.size(); irecoJet++) {
       
-      
+      	old_all_cutflow->Fill(ifile-0.5,weight);
+	old_reco_all_pt->Fill(all_jet_pt[irecoJet]/GeV, weight);
+	old_reco_all_eta->Fill(all_jet_eta[irecoJet], weight);
+
 	// Defines the relevant phase-space for this study
 	if (all_jet_pt[irecoJet] < 15*GeV) continue;
 	if (all_jet_pt[irecoJet] > 25*GeV) continue;
 	if (std::abs(all_jet_eta[irecoJet]) > 2.5) continue;
 	TLorentzVector reco_jet(0,0,0,0);
 	reco_jet.SetPtEtaPhiE(all_jet_pt[irecoJet]/GeV, all_jet_eta[irecoJet], all_jet_phi[irecoJet], all_jet_e[irecoJet]/GeV);
+
+	old_selected_cutflow->Fill(ifile-0.5,weight);
 
 	// Check if jet is isolated https://arxiv.org/pdf/1703.09665.pdf
 	int nIsolation = 0;
@@ -549,6 +609,9 @@ int main(int argc, char** argv) {
 	  }
 	}
 	if (nIsolation > 1) continue;
+
+	old_thiso_cutflow->Fill(ifile-0.5,weight);
+
 	int rIsolation = 0;
 	TLorentzVector reco_isolation(0,0,0,0);
 	for (size_t irecoJet2 = 0; irecoJet2 < all_jet_pt.size(); irecoJet2++) {
@@ -563,6 +626,8 @@ int main(int argc, char** argv) {
 	}
 	if (nIsolation == 1) old_reco_iso_pt->Fill(reco_isolation.Pt(), weight);
 	if (rIsolation > 0) continue;
+
+	old_expiso_cutflow->Fill(ifile-0.5,weight);
      
 	// Find the closest truth jet
 	double minDist = 99999;
@@ -590,6 +655,8 @@ int main(int argc, char** argv) {
 	else old_reco_truth_dist_high->Fill(minDist, weight);
 
 	if (minDist < 0.3) { // HS jet
+	  old_matched_cutflow->Fill(ifile-0.5,weight);
+
 	  old_reco_pt->Fill(reco_jet.Pt(), weight);
 	  old_reco_eta->Fill(reco_jet.Eta(), weight);
 	  old_truth_pt->Fill(truth_jet.Pt(), weight);
@@ -620,8 +687,36 @@ int main(int argc, char** argv) {
     oldFile->Close();
     if (debug2) {
       std::cout << "After file " << ifile << ", new correction: " << new_reco_pt->Integral() << "(" << new_reco_pt->GetEntries() << ")" << ", old correction: " << old_reco_pt->Integral() << "(" << old_reco_pt->GetEntries() << ")" << std::endl;
+      std::cout << "After file " << ifile << ", new correction iso: " << new_reco_iso_pt->Integral() << " " << new_reco_iso_pt->Integral(0, 101) << " (" << new_reco_iso_pt->GetEntries() << ")" << ", old correction: iso " << old_reco_iso_pt->Integral() << " " << old_reco_iso_pt->Integral(0, 101) << " (" << old_reco_iso_pt->GetEntries() << ")" << std::endl;
     }
   }
+
+  PutOverflowInLastBin(new_reco_pt); PutUnderflowInFirstBin(new_reco_pt);
+  PutOverflowInLastBin(old_reco_pt); PutUnderflowInFirstBin(old_reco_pt);
+
+  PutOverflowInLastBin(new_reco_iso_pt); PutUnderflowInFirstBin(new_reco_iso_pt);
+  PutOverflowInLastBin(old_reco_iso_pt); PutUnderflowInFirstBin(old_reco_iso_pt);
+
+  PutOverflowInLastBin(new_truth_pt); PutUnderflowInFirstBin(new_truth_pt);
+  PutOverflowInLastBin(old_truth_pt); PutUnderflowInFirstBin(old_truth_pt);
+
+  PutOverflowInLastBin(new_reco_eta); PutUnderflowInFirstBin(new_reco_eta);
+  PutOverflowInLastBin(old_reco_eta); PutUnderflowInFirstBin(old_reco_eta);
+
+  PutOverflowInLastBin(new_truth_eta); PutUnderflowInFirstBin(new_truth_eta);
+  PutOverflowInLastBin(old_truth_eta); PutUnderflowInFirstBin(old_truth_eta);
+
+  PutOverflowInLastBin(new_reco_truth_dist_low); PutUnderflowInFirstBin(new_reco_truth_dist_low);
+  PutOverflowInLastBin(old_reco_truth_dist_low); PutUnderflowInFirstBin(old_reco_truth_dist_low);
+
+  PutOverflowInLastBin(new_reco_truth_dist_high); PutUnderflowInFirstBin(new_reco_truth_dist_high);
+  PutOverflowInLastBin(old_reco_truth_dist_high); PutUnderflowInFirstBin(old_reco_truth_dist_high);
+ 
+  PutOverflowInLastBin(new_reco_response_low); PutUnderflowInFirstBin(new_reco_response_low);
+  PutOverflowInLastBin(old_reco_response_low); PutUnderflowInFirstBin(old_reco_response_low);
+
+  PutOverflowInLastBin(new_reco_response_high); PutUnderflowInFirstBin(new_reco_response_high);
+  PutOverflowInLastBin(old_reco_response_high); PutUnderflowInFirstBin(old_reco_response_high);
 
   RooRealVar _mean("_mean", "_mean", -5., 5.);
   RooRealVar _sigma("_sigma", "_sigma", 0., 10.);
@@ -793,7 +888,7 @@ int main(int argc, char** argv) {
   double _scale_old, _scale_old_err, _resolution_old;
   double _scale_new, _scale_new_err, _resolution_new;
 
-  _mean.setVal(_old_response_low.mean(_response));
+  _mean.setVal(_old_response_low.mean(_response)-0.1);
   _sigma.setVal(_old_response_low.sigma(_response));
   _alpha1.setVal(1);
   _alpha2.setVal(2);
@@ -806,12 +901,12 @@ int main(int argc, char** argv) {
   _alpha2.setConstant(false);
   _n1.setConstant(true);
   _n2.setConstant(true);
-  _gaus.fitTo(_old_response_low,RooFit::Range(-1.,1.), RooFit::NumCPU(4));
+  _gaus.fitTo(_old_response_low,RooFit::Range(-0.2,0.2), RooFit::NumCPU(4));
   _cbfunc_old_response_low.fitTo(_old_response_low,RooFit::Range(-1.,1.), RooFit::NumCPU(4));
   _n1.setConstant(false);
   _n2.setConstant(false);
   _cbfunc_old_response_low.fitTo(_old_response_low,RooFit::Range(-1.,1.), RooFit::NumCPU(4));
-
+  _cbfunc_old_response_low.fitTo(_old_response_low,RooFit::Range(-1.,1.), RooFit::NumCPU(4));
   _scale_old = _mean.getVal();
   _scale_old_err = _mean.getError();
   _resolution_old = calculateResolution(_sigma.getVal(), _alpha1.getVal(), _alpha2.getVal(), _n1.getVal(), _n2.getVal(), 0.68);
@@ -822,12 +917,12 @@ int main(int argc, char** argv) {
   _alpha2.setConstant(false);
   _n1.setConstant(true);
   _n2.setConstant(true);
-  _gaus.fitTo(_new_response_low,RooFit::Range(-1.,1.), RooFit::NumCPU(4));
+  _gaus.fitTo(_new_response_low,RooFit::Range(-0.2,0.2), RooFit::NumCPU(4));
   _cbfunc_new_response_low.fitTo(_new_response_low,RooFit::Range(-1.,1.), RooFit::NumCPU(4));
   _n1.setConstant(false);
   _n2.setConstant(false);
   _cbfunc_new_response_low.fitTo(_new_response_low,RooFit::Range(-1.,1.), RooFit::NumCPU(4));
-
+  _cbfunc_new_response_low.fitTo(_new_response_low,RooFit::Range(-1.,1.), RooFit::NumCPU(4));
   _scale_new = _mean.getVal();
   _scale_new_err = _mean.getError();
   _resolution_new = calculateResolution(_sigma.getVal(), _alpha1.getVal(), _alpha2.getVal(), _n1.getVal(), _n2.getVal(), 0.68);
@@ -866,6 +961,10 @@ int main(int argc, char** argv) {
   c1->Print("reco_response_high.png");
   c1->Print("reco_response_high.pdf");
 
+  new_reco_pt->SetMinimum(0);
+  old_reco_pt->SetMinimum(0);
+  new_reco_pt->SetMaximum(1.5*new_reco_pt->GetMaximum());
+  old_reco_pt->SetMaximum(1.5*old_reco_pt->GetMaximum());
   new_reco_pt->SetLineColor(kBlue);
   old_reco_pt->SetLineColor(kRed);
   new_reco_pt->SetTitle("Jet p_{T}; p_{T}^{reco} [GeV]; Entries");
@@ -876,16 +975,36 @@ int main(int argc, char** argv) {
   c1->Print("reco_pt.png");
   c1->Print("reco_pt.pdf");
 
+  new_reco_all_pt->SetMinimum(0);
+  old_reco_all_pt->SetMinimum(0);
+  new_reco_all_pt->SetMaximum(1.5*new_reco_all_pt->GetMaximum());
+  old_reco_all_pt->SetMaximum(1.5*old_reco_all_pt->GetMaximum());
+  new_reco_all_pt->SetLineColor(kBlue);
+  old_reco_all_pt->SetLineColor(kRed);
+  new_reco_all_pt->SetTitle("Jet p_{T}; p_{T}^{reco} [GeV]; Entries");
+  new_reco_all_pt->Draw("hist");
+  old_reco_all_pt->Draw("hist,same");
+  ATLASLabel(0.2, 0.8, "Work in Progress");
+  leg->Draw();
+  c1->Print("reco_all_pt.png");
+  c1->Print("reco_all_pt.pdf");
+
   new_reco_iso_pt->SetLineColor(kBlue);
   old_reco_iso_pt->SetLineColor(kRed);
+  new_reco_iso_pt->SetNormFactor(1);
+  old_reco_iso_pt->SetNormFactor(1);
   new_reco_iso_pt->SetTitle("Jet p_{T}; p_{T}^{iso} [GeV]; Entries");
+  c1->SetLogy(true);
   new_reco_iso_pt->Draw("hist");
   old_reco_iso_pt->Draw("hist,same");
   ATLASLabel(0.2, 0.8, "Work in Progress");
   leg->Draw();
   c1->Print("reco_iso_pt.png");
   c1->Print("reco_iso_pt.pdf");
+  c1->SetLogy(false);
 
+  new_truth_pt->SetMinimum(0);
+  old_truth_pt->SetMinimum(0);
   new_truth_pt->SetLineColor(kBlue);
   old_truth_pt->SetLineColor(kRed);
   new_truth_pt->SetTitle("Jet p_{T}; p_{T}^{truth} [GeV]; Entries");
@@ -896,6 +1015,10 @@ int main(int argc, char** argv) {
   c1->Print("truth_pt.png");
   c1->Print("truth_pt.pdf");
 
+  new_reco_eta->SetMinimum(0);
+  old_reco_eta->SetMinimum(0);
+  new_reco_eta->SetMaximum(1.5*new_reco_eta->GetMaximum());
+  old_reco_eta->SetMaximum(1.5*old_reco_eta->GetMaximum());
   new_reco_eta->SetLineColor(kBlue);
   old_reco_eta->SetLineColor(kRed);
   new_reco_eta->SetTitle("Jet #eta; #eta^{reco} [GeV]; Entries");
@@ -905,6 +1028,20 @@ int main(int argc, char** argv) {
   leg->Draw();
   c1->Print("reco_eta.png");
   c1->Print("reco_eta.pdf");
+
+  new_reco_all_eta->SetMinimum(0);
+  old_reco_all_eta->SetMinimum(0);
+  new_reco_all_eta->SetMaximum(3*new_reco_all_eta->GetMaximum());
+  old_reco_all_eta->SetMaximum(3*old_reco_all_eta->GetMaximum());
+  new_reco_all_eta->SetLineColor(kBlue);
+  old_reco_all_eta->SetLineColor(kRed);
+  new_reco_all_eta->SetTitle("Jet p_{T}; p_{T}^{reco} [GeV]; Entries");
+  new_reco_all_eta->Draw("hist");
+  old_reco_all_eta->Draw("hist,same");
+  ATLASLabel(0.2, 0.8, "Work in Progress");
+  leg->Draw();
+  c1->Print("reco_all_eta.png");
+  c1->Print("reco_all_eta.pdf");
 
   new_truth_eta->SetLineColor(kBlue);
   old_truth_eta->SetLineColor(kRed);
@@ -942,7 +1079,7 @@ int main(int argc, char** argv) {
   old_pu_jvt_efficiency->SetMarkerStyle(20);
   new_pu_jvt_efficiency->SetTitle("JVT efficiency PU jets; Jet reco p_{T} [GeV]; JVT efficiency");
   eff_hist->SetTitle("JVT efficiency PU jets; Jet reco p_{T} [GeV]; JVT efficiency");
-  eff_hist->GetYaxis()->SetRangeUser(0, 1.6);
+  eff_hist->GetYaxis()->SetRangeUser(0, 0.6);
   eff_hist->Draw();
   new_pu_jvt_efficiency->Draw("same");
   old_pu_jvt_efficiency->Draw("same");
@@ -993,7 +1130,7 @@ int main(int argc, char** argv) {
   old_btag_light_efficiency->SetMarkerStyle(20);
   new_btag_light_efficiency->SetTitle("DL1r efficiency (77% WP); Jet reco p_{T} [GeV]; DL1r light efficiency");
   eff_hist->SetTitle("DL1r efficiency (77% WP); Jet reco p_{T} [GeV]; DL1r efficiency");
-  eff_hist->GetYaxis()->SetRangeUser(0, 0.07);
+  eff_hist->GetYaxis()->SetRangeUser(0, 0.04);
   eff_hist->Draw();
   new_btag_light_efficiency->Draw("same");
   old_btag_light_efficiency->Draw("same");
@@ -1011,6 +1148,18 @@ int main(int argc, char** argv) {
   new_jet_resolution->Write("new_jet_resolution");
   new_jet_scale_pu->Write("new_jet_scale_pu");
   new_jet_resolution_pu->Write("new_jet_resolution_pu");
+
+  new_all_cutflow->Write();
+  new_selected_cutflow->Write();
+  new_thiso_cutflow->Write();
+  new_expiso_cutflow->Write();
+  new_matched_cutflow->Write();
+
+  old_all_cutflow->Write();
+  old_selected_cutflow->Write();
+  old_thiso_cutflow->Write();
+  old_expiso_cutflow->Write();
+  old_matched_cutflow->Write();
   outputFile->Close();
 
 }
