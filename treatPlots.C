@@ -15,6 +15,8 @@
 #include <vector>
 #include <iostream>
 
+#define useBTagOnly false
+
 int main(int argc, char** argv) {
 
   double GeV = 1000.;
@@ -134,6 +136,7 @@ int main(int argc, char** argv) {
   jet_resolution->GetXaxis()->SetTitle("Jet reco p_{T} [GeV]");
   jet_resolution->GetYaxis()->SetTitle("Jet energy resolution");
   jet_resolution->GetYaxis()->SetRangeUser(0.5, 1.1);
+  if (useBTagOnly) jet_resolution->GetYaxis()->SetRangeUser(0.2, 1.0);
   gPad->Update();
   ATLASLabel(0.2, 0.8, "Work in Progress");
   leg->Draw();
@@ -153,6 +156,7 @@ int main(int argc, char** argv) {
   jet_scale->GetXaxis()->SetTitle("Jet reco p_{T} [GeV]");
   jet_scale->GetYaxis()->SetTitle("Jet energy scale");
   jet_scale->GetYaxis()->SetRangeUser(0.8, 1.15);
+  if (useBTagOnly) jet_scale->GetYaxis()->SetRangeUser(0.5, 1.1);
   gPad->Update();
   ATLASLabel(0.2, 0.8, "Work in Progress");
   leg->Draw();
@@ -172,6 +176,7 @@ int main(int argc, char** argv) {
   jet_scale_pu->GetXaxis()->SetTitle("Pile-up #mu (actual)");
   jet_scale_pu->GetYaxis()->SetTitle("Jet energy scale");
   jet_scale_pu->GetYaxis()->SetRangeUser(0.8, 1.15);
+  if (useBTagOnly) jet_scale_pu->GetYaxis()->SetRangeUser(0.5, 1.2);
   gPad->Update();
   ATLASLabel(0.2, 0.8, "Work in Progress");
   leg->Draw();

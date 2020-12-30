@@ -32,6 +32,7 @@
 
 #define debug false
 #define debug2 false
+#define useBTagOnly false
 
 void PutOverflowInLastBin(TH1D* h) {
 
@@ -361,6 +362,9 @@ int main(int argc, char** argv) {
 	if (all_jet_pt[irecoJet] < 15*GeV) continue;
 	if (all_jet_pt[irecoJet] > 25*GeV) continue;
 	if (std::abs(all_jet_eta[irecoJet]) > 2.5) continue;
+	if (useBTagOnly && irecoJet > reco_jet_pt.size()) continue;
+	if (useBTagOnly && !reco_jet_b[irecoJet]) continue;
+
 	TLorentzVector reco_jet(0,0,0,0);
 	reco_jet.SetPtEtaPhiE(all_jet_pt[irecoJet]/GeV, all_jet_eta[irecoJet], all_jet_phi[irecoJet], all_jet_e[irecoJet]/GeV);
 
@@ -563,6 +567,9 @@ int main(int argc, char** argv) {
 	if (all_jet_pt[irecoJet] < 15*GeV) continue;
 	if (all_jet_pt[irecoJet] > 25*GeV) continue;
 	if (std::abs(all_jet_eta[irecoJet]) > 2.5) continue;
+	if (useBTagOnly && irecoJet > reco_jet_pt.size()) continue;
+	if (useBTagOnly && !reco_jet_b[irecoJet]) continue;
+
 	TLorentzVector reco_jet(0,0,0,0);
 	reco_jet.SetPtEtaPhiE(all_jet_pt[irecoJet]/GeV, all_jet_eta[irecoJet], all_jet_phi[irecoJet], all_jet_e[irecoJet]/GeV);
 
